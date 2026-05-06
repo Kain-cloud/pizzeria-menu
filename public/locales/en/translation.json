@@ -1,0 +1,42 @@
+{
+  "app": { "title": "Benvenuto", "subtitle": "Pizzeria Ardi" },
+  "nav": { "search": "Search dishes…" },
+  "categories": {
+    "pizza": "Pizza",
+    "pasta": "Pasta & Risotto",
+    "salads": "Salads",
+    "desserts": "Desserts",
+    "drinks": "Drinks"
+  },
+  "menu": {
+    "margherita": {
+      "name": "Margherita",
+      "description": "Tomato sauce, mozzarella, fresh basil"
+    }
+  },
+  "dish": {
+    "sizes": { "s": "Small", "m": "Medium", "l": "Large", "default": "Price" },
+    "unavailable": "Currently unavailable",
+    "allergens": "Allergens"
+  },
+  "search": {
+    "resultsFor": "Results for \"{{query}}\"",
+    "noResults": "No dishes found for \"{{query}}\""
+  },
+  "offline": {
+    "stale": "You're offline — showing cached menu (may be outdated)",
+    "noCache": "You're offline and no cached menu is available"
+  },
+  "admin": {
+    "login": "Admin Login",
+    "save": "Save",
+    "delete": "Delete",
+    "confirmDelete": "Type DELETE to confirm",
+    "confirmDeleteMany": "You are deleting {{count}} items. Type DELETE to confirm."
+  },
+  "footer": {
+    "address": "Lagja 4, Rr. \"EGNATIA\", Durrës",
+    "hours": "Open daily 10:00–24:00",
+    "phone": "067 26 06 767"
+  }
+}
