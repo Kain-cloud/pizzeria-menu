@@ -12,6 +12,14 @@
     "margherita": {
       "name": "Margherita",
       "description": "Tomato sauce, mozzarella, fresh basil"
+    },
+    "penne": {
+      "name": "Penne",
+      "description": "Classic penne pasta with your choice of sauce"
+    },
+    "spaghetti": {
+      "name": "Spaghetti",
+      "description": "Traditional spaghetti served with our signature sauce"
     }
   },
   "dish": {

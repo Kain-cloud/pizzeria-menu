@@ -7,15 +7,15 @@ export default function CategoryNav() {
   const { t } = useTranslation();
 
   return (
-    <div className="w-full overflow-x-auto whitespace-nowrap bg-white border-b px-4 py-3 hide-scrollbar">
+    <div className="flex gap-[6px] overflow-x-auto pb-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
       {categories.sort((a, b) => a.sort_order - b.sort_order).map((cat) => (
         <button
           key={cat.id}
           onClick={() => setCategory(cat.id)}
-          className={`inline-block px-4 py-2 mr-2 rounded-full font-medium transition-colors ${
+          className={`px-[16px] py-[7px] rounded-full text-[13px] font-medium border-[0.5px] whitespace-nowrap transition-colors cursor-pointer ${
             activeCategory === cat.id
-              ? 'bg-red-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-[#c62828] text-white border-[#c62828]'
+              : 'bg-white text-gray-500 border-gray-200 hover:bg-[#f8f7f4] hover:text-[#c62828] hover:border-[#c62828]'
           }`}
         >
           {t(`categories.${cat.id}`, cat.id)}

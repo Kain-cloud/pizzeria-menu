@@ -1,7 +1,9 @@
 -- categories
 CREATE TABLE categories (
   id         TEXT PRIMARY KEY,       -- e.g. 'pizza', 'pasta'
-  sort_order INT NOT NULL DEFAULT 0
+  sort_order INT NOT NULL DEFAULT 0,
+  emoji      TEXT DEFAULT '🍕',
+  is_visible BOOLEAN DEFAULT true
 );
 
 -- menu_items
@@ -12,6 +14,7 @@ CREATE TABLE menu_items (
   prices       JSONB NOT NULL,        -- see §3.2
   image_url    TEXT,
   allergens    TEXT[] DEFAULT '{}',
+  tags         TEXT[] DEFAULT '{}',
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order   INT NOT NULL DEFAULT 0,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()

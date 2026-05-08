@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useMenuStore } from '../store/useMenuStore';
 import { useTranslation } from 'react-i18next';
 import DishCard from './DishCard';
 
 export default function MenuList({ visibleItems, isSearching }) {
-  const { menuStatus, error, query } = useMenuStore();
+  const { categories, menuStatus, error, query } = useMenuStore();
   const { t } = useTranslation();
+
+  const categoryMap = useMemo(() => {
+    return categories.reduce((acc, cat) => {
+      acc[cat.id] = cat;
+      return acc;
+    }, {});
+  }, [categories]);
 
   if (menuStatus === 'loading') {
     return (
@@ -35,7 +42,7 @@ export default function MenuList({ visibleItems, isSearching }) {
 
   if (visibleItems.length === 0 && menuStatus === 'ready') {
     return (
-      <div className="text-center p-8 text-gray-500">
+      <div className="text-center p-8 text-gray-500 text-[13px]">
         {isSearching 
           ? t('search.noResults', { query })
           : 'No dishes available in this category.'}
@@ -46,13 +53,13 @@ export default function MenuList({ visibleItems, isSearching }) {
   return (
     <div>
       {isSearching && (
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.06em] text-gray-500 mb-2">
           {t('search.resultsFor', { query })}
         </h2>
       )}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-[10px]">
         {visibleItems.sort((a, b) => a.sort_order - b.sort_order).map(item => (
-          <DishCard key={item.id} item={item} isSearching={isSearching} />
+          <DishCard key={item.id} item={item} isSearching={isSearching} categoryMap={categoryMap} />
         ))}
       </div>
     </div>
