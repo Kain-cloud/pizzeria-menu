@@ -1,14 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from './lib/supabase';
 import { saveCache, loadCache, isCacheFresh } from './lib/cache';
-import { normalize } from './lib/normalize';
+import { subscribeToMenu } from './lib/realtime';
+import { filterVisibleMenu } from './lib/menuFilter';
 import { useMenuStore } from './store/useMenuStore';
+
 import SearchBar from './components/SearchBar';
 import CategoryNav from './components/CategoryNav';
 import MenuList from './components/MenuList';
 import OfflineBanner from './components/OfflineBanner';
 import ErrorBoundary from './components/ErrorBoundary';
+import ChatBot from './components/ChatBot';
+
 import AdminLogin from './admin/AdminLogin';
 import AdminPanel from './admin/AdminPanel';
 
@@ -17,21 +21,14 @@ function App() {
   const [session, setSession] = useState(null);
 
   const { t, i18n } = useTranslation();
-  const { items, categories, menuStatus, setMenuData, setMenuStatus, setError, query, activeCategory } = useMenuStore();
+  const { items, categories, setMenuData, setMenuStatus, setError, query, activeCategory } = useMenuStore();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isStale, setIsStale] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    
     const onPopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', onPopState);
 
@@ -55,79 +52,74 @@ function App() {
     };
   }, [currentPath]);
 
-  useEffect(() => {
-    if (currentPath.startsWith('/admin')) return;
+  const loadData = async () => {
+    setMenuStatus('loading');
+    
+    const cache = loadCache();
+    let hasRenderedCache = false;
 
-    async function loadData() {
-      setMenuStatus('loading');
-      
-      const cache = loadCache();
-      let hasRenderedCache = false;
+    if (cache) {
+      const visibleData = filterVisibleMenu(cache.items, cache.categories);
+      setMenuData(visibleData);
+      hasRenderedCache = true;
+      if (!isCacheFresh(cache) && !navigator.onLine) setIsStale(true);
+    } else if (!navigator.onLine) {
+      setMenuStatus('error');
+      setError(new Error('offline'));
+      return;
+    }
 
-      if (cache) {
-        const visibleCats = cache.categories.filter(c => c.is_visible !== false);
-        const visibleCatIds = new Set(visibleCats.map(c => c.id));
-        const activeItems = cache.items.filter(item => visibleCatIds.has(item.category_id));
+    if (navigator.onLine) {
+      try {
+        const [itemsRes, catsRes] = await Promise.all([
+          supabase.from('menu_items').select('*'),
+          supabase.from('categories').select('*')
+        ]);
 
-        setMenuData({ items: activeItems, categories: visibleCats });
-        hasRenderedCache = true;
-        if (!isCacheFresh(cache) && !navigator.onLine) {
+        if (itemsRes.error) throw itemsRes.error;
+        if (catsRes.error) throw catsRes.error;
+
+        saveCache({ items: itemsRes.data, categories: catsRes.data });
+        
+        const visibleData = filterVisibleMenu(itemsRes.data, catsRes.data);
+        setMenuData(visibleData);
+        setIsStale(false);
+      } catch (err) {
+        console.error(err);
+        if (!hasRenderedCache) {
+          setMenuStatus('error');
+          setError(err);
+        } else {
           setIsStale(true);
-        }
-      } else if (!navigator.onLine) {
-        setMenuStatus('error');
-        setError(new Error('offline'));
-        return;
-      }
-
-      if (navigator.onLine) {
-        try {
-          const [itemsRes, catsRes] = await Promise.all([
-            supabase.from('menu_items').select('*'),
-            supabase.from('categories').select('*')
-          ]);
-
-          if (itemsRes.error) throw itemsRes.error;
-          if (catsRes.error) throw catsRes.error;
-
-          const visibleCats = catsRes.data.filter(c => c.is_visible !== false);
-          const visibleCatIds = new Set(visibleCats.map(c => c.id));
-          const activeItems = itemsRes.data.filter(item => visibleCatIds.has(item.category_id));
-
-          const newData = { items: activeItems, categories: visibleCats };
-          saveCache(newData);
-          setMenuData(newData);
-          setIsStale(false);
-        } catch (err) {
-          console.error(err);
-          if (!hasRenderedCache) {
-            setMenuStatus('error');
-            setError(err);
-          } else {
-            setIsStale(true);
-          }
         }
       }
     }
+  };
 
+  useEffect(() => {
+    if (currentPath.startsWith('/admin')) return;
     loadData();
+
+    // Subscribe to real-time changes
+    const cleanupRealtime = subscribeToMenu(() => {
+      if (navigator.onLine) loadData(); // Reload silently on background change
+    });
+
+    return cleanupRealtime;
   }, [currentPath, setMenuData, setMenuStatus, setError]);
 
-  const searchIndex = useMemo(() => {
-    return items.map(item => ({
-      ...item,
-      searchText: normalize(
-        t(`menu.${item.slug}.name`, '') + ' ' +
-        t(`menu.${item.slug}.description`, '')
-      ),
-    }));
-  }, [items, i18n.language]);
-
   const isSearching = query.trim().length > 0;
+  const normalizedQuery = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const visibleItems = isSearching
-    ? searchIndex.filter(item => item.searchText.includes(normalize(query)))
-    : searchIndex.filter(item => item.category_id === activeCategory && item.is_available);
+    ? items.filter(item => {
+        const lang = i18n.language;
+        const name = (item.translations?.[lang]?.name || item.slug.replace(/_/g, ' ')).toLowerCase();
+        const desc = (item.translations?.[lang]?.description || '').toLowerCase();
+        const searchText = (name + ' ' + desc).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return searchText.includes(normalizedQuery);
+      })
+    : items.filter(item => item.category_id === activeCategory);
 
   // Simple Router
   if (currentPath.startsWith('/admin')) {
@@ -139,24 +131,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fdf6ec] font-sans flex flex-col max-w-2xl mx-auto shadow-xl relative overflow-hidden border-[0.5px] border-[#e8d9c0] sm:my-4 sm:rounded-xl sm:min-h-[calc(100vh-2rem)]">
+    <div className="min-h-screen bg-warm-50 font-sans flex flex-col max-w-2xl mx-auto relative overflow-hidden sm:border-x border-warm-200 sm:shadow-2xl selection:bg-brand-500/20">
       {isOffline && <OfflineBanner stale={isStale} />}
       
-      <header className="bg-white px-5 pt-3.5 border-b-[0.5px] border-[#e8d9c0] sticky top-0 z-10">
-        <div className="flex justify-between items-start mb-3">
+      <header className="bg-white px-5 pt-4 pb-2 border-b border-warm-200 sticky top-0 z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-[22px] font-medium text-[#c62828] tracking-tight">{t('app.title', 'Benvenuto')}</h1>
-            <p className="text-[12px] text-gray-500 mt-0.5">{t('app.subtitle', 'Pizzeria Ardi · Durrës')}</p>
+            <h1 className="text-[24px] font-bold text-brand-500 tracking-tight leading-none">{t('app.title', 'Benvenuto')}</h1>
+            <p className="text-[13px] font-medium text-warm-400 mt-1.5">{t('app.subtitle', 'Pizzeria Ardi · Durrës')}</p>
           </div>
-          <div className="flex items-center gap-1 bg-[#f8f7f4] rounded-full p-1">
+          <div className="flex items-center gap-1 bg-warm-100 rounded-full p-1 shadow-inner border border-warm-200/50">
             {['en', 'it', 'es'].map(lang => (
               <button
                 key={lang}
                 onClick={() => i18n.changeLanguage(lang)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
+                className={`px-3 py-1.5 rounded-full text-xs font-bold tracking-wider cursor-pointer transition-all border-none ${
                   i18n.language === lang || (lang === 'en' && !i18n.language)
-                    ? 'bg-white text-[#c62828] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                    : 'bg-transparent text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-brand-500 shadow-sm'
+                    : 'bg-transparent text-warm-500 hover:text-warm-700 hover:bg-warm-200/50'
                 }`}
               >
                 {lang.toUpperCase()}
@@ -164,22 +156,24 @@ function App() {
             ))}
           </div>
         </div>
-        <div className="pb-2.5">
+        <div className="pb-3">
           <SearchBar />
         </div>
         <CategoryNav />
       </header>
 
-      <main className="flex-1 p-[16px_20px_20px] flex flex-col gap-2.5 bg-[#fdf6ec] overflow-y-auto">
+      <main className="flex-1 p-[20px_20px_24px] flex flex-col gap-3 bg-warm-50 overflow-y-auto">
         <ErrorBoundary>
           <MenuList visibleItems={visibleItems} isSearching={isSearching} />
         </ErrorBoundary>
       </main>
 
-      <footer className="border-t-[0.5px] border-[#e8d9c0] p-[14px_20px] bg-[#1a1008] flex flex-col gap-1 text-center text-[12px] text-white/50">
-        <p><strong className="text-white/80 font-medium">{t('footer.address', 'Lagja 4, Rr. "EGNATIA", Durrës')}</strong></p>
-        <p>067 26 06 767 &nbsp;&middot;&nbsp; Open daily 10:00–24:00</p>
+      <footer className="border-t border-warm-200 p-[16px_20px] bg-warm-900 flex flex-col gap-1.5 text-center text-[12.5px] text-warm-400 font-medium z-10">
+        <p><strong className="text-white tracking-wide">{t('footer.address')}</strong></p>
+        <p className="text-warm-300 tracking-wide">{t('footer.phone')} &nbsp;&middot;&nbsp; {t('footer.hours')}</p>
       </footer>
+
+      <ChatBot />
     </div>
   );
 }

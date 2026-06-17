@@ -4,6 +4,8 @@
   "categories": {
     "pizza": "Pizza",
     "pasta": "Pasta & Risotto",
+    "rizoto": "Risotto",
+    "krepa": "Crêpe",
     "salads": "Salads",
     "desserts": "Desserts",
     "drinks": "Drinks"
@@ -46,5 +48,14 @@
     "address": "Lagja 4, Rr. \"EGNATIA\", Durrës",
     "hours": "Open daily 10:00–24:00",
     "phone": "067 26 06 767"
+  },
+  "chat": {
+    "title": "Ask about our menu",
+    "placeholder": "Type a message…",
+    "greeting": "Hi! I can help you explore our menu. Ask me about dishes, allergens, or for recommendations!",
+    "error": "Sorry, something went wrong. Please try again."
+  },
+  "empty": {
+    "category": "No dishes available in this category."
   }
 }

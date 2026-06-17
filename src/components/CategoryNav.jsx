@@ -7,15 +7,17 @@ export default function CategoryNav() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex gap-[6px] overflow-x-auto pb-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-      {categories.sort((a, b) => a.sort_order - b.sort_order).map((cat) => (
+    <div className="flex gap-1.5 overflow-x-auto pb-3 hide-scrollbar" role="tablist" aria-label="Menu categories">
+      {categories.map((cat) => (
         <button
           key={cat.id}
+          role="tab"
+          aria-selected={activeCategory === cat.id}
           onClick={() => setCategory(cat.id)}
-          className={`px-[16px] py-[7px] rounded-full text-[13px] font-medium border-[0.5px] whitespace-nowrap transition-colors cursor-pointer ${
+          className={`px-3.5 py-[7px] rounded-full text-[12.5px] font-medium border whitespace-nowrap transition-all cursor-pointer ${
             activeCategory === cat.id
-              ? 'bg-[#c62828] text-white border-[#c62828]'
-              : 'bg-white text-gray-500 border-gray-200 hover:bg-[#f8f7f4] hover:text-[#c62828] hover:border-[#c62828]'
+              ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
+              : 'bg-white text-warm-500 border-warm-200 hover:text-brand-500 hover:border-brand-200'
           }`}
         >
           {t(`categories.${cat.id}`, cat.id)}

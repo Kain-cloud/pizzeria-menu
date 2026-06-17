@@ -1,0 +1,61 @@
+{
+  "app": { "title": "Bienvenido", "subtitle": "Pizzeria Ardi" },
+  "nav": { "search": "Buscar platos…" },
+  "categories": {
+    "pizza": "Pizza",
+    "pasta": "Pasta y Risotto",
+    "rizoto": "Risotto",
+    "krepa": "Crêpe",
+    "salads": "Ensaladas",
+    "desserts": "Postres",
+    "drinks": "Bebidas"
+  },
+  "menu": {
+    "margherita": {
+      "name": "Margherita",
+      "description": "Salsa de tomate, mozzarella, albahaca fresca"
+    },
+    "penne": {
+      "name": "Penne",
+      "description": "Penne clásicos con tu salsa favorita"
+    },
+    "spaghetti": {
+      "name": "Spaghetti",
+      "description": "Espaguetis tradicionales con nuestra salsa especial"
+    }
+  },
+  "dish": {
+    "sizes": { "s": "Pequeña", "m": "Mediana", "l": "Grande", "default": "Precio" },
+    "unavailable": "No disponible actualmente",
+    "allergens": "Alérgenos"
+  },
+  "search": {
+    "resultsFor": "Resultados para \"{{query}}\"",
+    "noResults": "No se encontraron platos para \"{{query}}\""
+  },
+  "offline": {
+    "stale": "Sin conexión — mostrando menú guardado (puede estar desactualizado)",
+    "noCache": "Sin conexión y no hay menú guardado"
+  },
+  "admin": {
+    "login": "Acceso Admin",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "confirmDelete": "Escribe DELETE para confirmar",
+    "confirmDeleteMany": "Estás eliminando {{count}} elementos. Escribe DELETE para confirmar."
+  },
+  "footer": {
+    "address": "Lagja 4, Rr. \"EGNATIA\", Durrës",
+    "hours": "Abierto todos los días 10:00–24:00",
+    "phone": "067 26 06 767"
+  },
+  "chat": {
+    "title": "Pregunta sobre el menú",
+    "placeholder": "Escribe un mensaje…",
+    "greeting": "¡Hola! Puedo ayudarte a elegir de nuestro menú. ¡Pregúntame sobre platos, alérgenos o recomendaciones!",
+    "error": "Lo siento, algo salió mal. Inténtalo de nuevo."
+  },
+  "empty": {
+    "category": "No hay platos disponibles en esta categoría."
+  }
+}
